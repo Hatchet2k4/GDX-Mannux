@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapLayers;
+import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapImageLayer;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
@@ -92,6 +93,11 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         tiledMapRenderer.setView(camera);                
         
         tiledMapRenderer.render();
+        
+        
+        //https://www.badlogicgames.com/forum/viewtopic.php?f=11&t=10173
+        
+        MapObjects colobj = tiledMap.getLayers().get("Obstructions").getObjects();
         
         
         
