@@ -1,5 +1,7 @@
 package com.mygdx.game;
 
+import java.util.Iterator;
+
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -12,7 +14,9 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapLayers;
+import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.MapObjects;
+import com.badlogic.gdx.maps.MapProperties;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapImageLayer;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
@@ -38,7 +42,9 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     int winx;
     int winy;
     
-    BitmapFont font; 
+    BitmapFont font;         
+    TiledMapImageLayer obj;
+    
     
     @Override
     public void create () {
@@ -48,8 +54,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         //_spriteBatch = ResourceManager.GetSpriteBatch();
         _spriteBatch = new SpriteBatch();
  
-        sp = new Sprite(new Texture(Gdx.files.internal("bg_docking_bay.png")));
-        window = new Sprite(new Texture(Gdx.files.internal("mapwindow.png")));
+        //sp = new Sprite(new Texture(Gdx.files.internal("badlogic.jpg")));
+        //window = new Sprite(new Texture(Gdx.files.internal("mapwindow.png")));
         
         font = new BitmapFont(); 
         
@@ -63,6 +69,10 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         camera.update();
         tiledMap = new TmxMapLoader().load("dockingbay2.tmx");
         tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
+        
+        MapLayers mapLayers = tiledMap.getLayers();
+
+        obj =  (TiledMapImageLayer) mapLayers.get("BG2");
         
         //bg = ResourceManager.GetTexture("bg_docking_bay.png");
         
@@ -97,23 +107,33 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         
         //https://www.badlogicgames.com/forum/viewtopic.php?f=11&t=10173
         
-        MapObjects colobj = tiledMap.getLayers().get("Obstructions").getObjects();
         
         
+
         
-        MapLayers mapLayers = tiledMap.getLayers();
-        TiledMapImageLayer obj =  (TiledMapImageLayer) mapLayers.get("BG2");
+       // tiledMapRenderer.renderImageLayer(obj);
         
-        tiledMapRenderer.renderImageLayer(obj);
+MapObjects colobj = tiledMap.getLayers().get("Obstructions").getObjects();
         
         
         _spriteBatch.begin();
-        window.setPosition(560, 420);
-        window.setScale(2);
-        window.draw(_spriteBatch);
+        //window.setPosition(560, 420);
+        //window.setScale(2);
+        //window.draw(_spriteBatch);
         
-        font.draw(_spriteBatch, "Test", 0, 460);
-        //font.draw(_spriteBatch, obj.getName(), 0, 460);        
+        font.draw(_spriteBatch, "Test", 0, 480);
+        font.draw(_spriteBatch, obj.getName(), 0, 460);        
+        
+        Iterator<MapObject> i = colobj.iterator();
+        int y=0;
+        while(i.hasNext()) {
+        	MapProperties o = i.next().getProperties();
+        
+        	//System.out.println("value= " + i.next().toString());
+        	font.draw(_spriteBatch, o.toString()  , 0, 440-y);
+        	y+=20;
+        	
+        }
         
         _spriteBatch.end();
         
@@ -186,3 +206,34 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         return false;
     }
 }
+
+
+
+/*
+ * 
+ * public class OrthogonalTiledMapRendererWithSprites extends OrthogonalTiledMapRenderer {
+
+public OrthogonalTiledMapRendererWithSprites(TiledMap map) {
+    super(map);
+}
+@Override
+public void renderObject(MapObject object) {
+    if(object instanceof TextureMapObject) {
+        TextureMapObject textureObj = (TextureMapObject) object;
+        batch.draw(textureObj.getTextureRegion(), textureObj.getX(), textureObj.getY(),
+                textureObj.getOriginX(), textureObj.getOriginY(), textureObj.getTextureRegion().getRegionWidth(), textureObj.getTextureRegion().getRegionHeight(),
+                textureObj.getScaleX(), textureObj.getScaleY(), textureObj.getRotation());
+       if(textureObj.getProperties().containsKey("this")) System.out.println(textureObj.getRotation());
+    } else if(object instanceof RectangleMapObject){
+        RectangleMapObject rectObject = (RectangleMapObject) object;
+        Rectangle rect = rectObject.getRectangle();
+        ShapeRenderer sr = new ShapeRenderer();
+        sr.setProjectionMatrix(batch.getProjectionMatrix());
+        sr.begin(ShapeRenderer.ShapeType.Line);
+        sr.rect(rect.x, rect.y, rect.width, rect.height);
+        sr.end();
+    }
+}
+ * 
+ */
+
