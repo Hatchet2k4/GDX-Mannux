@@ -4,6 +4,8 @@ import java.util.Iterator;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Graphics;
+import com.badlogic.gdx.Graphics.DisplayMode;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.GL20;
@@ -22,7 +24,7 @@ import com.badlogic.gdx.maps.tiled.TiledMapImageLayer;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
-
+import com.badlogic.gdx.math.Intersector;
 import com.mygdx.game.RenderHelper;
 import com.mygdx.game.ResourceManager;
 
@@ -55,7 +57,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         _spriteBatch = new SpriteBatch();
  
         //sp = new Sprite(new Texture(Gdx.files.internal("badlogic.jpg")));
-        //window = new Sprite(new Texture(Gdx.files.internal("mapwindow.png")));
+        window = new Sprite(new Texture(Gdx.files.internal("mapwindow.png")));
         
         font = new BitmapFont(); 
         
@@ -107,7 +109,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         
         //https://www.badlogicgames.com/forum/viewtopic.php?f=11&t=10173
         
-        
+        //Intersector ins = new Intersector();
         
 
         
@@ -117,11 +119,11 @@ MapObjects colobj = tiledMap.getLayers().get("Obstructions").getObjects();
         
         
         _spriteBatch.begin();
-        //window.setPosition(560, 420);
-        //window.setScale(2);
-        //window.draw(_spriteBatch);
+        window.setPosition(560, 420);
+        window.setScale(2);
+        window.draw(_spriteBatch);
         
-        font.draw(_spriteBatch, "Test", 0, 480);
+        font.draw(_spriteBatch, "w: "+Integer.toString(Gdx.graphics.getWidth()) + " h: " + Integer.toString(Gdx.graphics.getHeight()), 0, 480);
         font.draw(_spriteBatch, obj.getName(), 0, 460);        
         
         Iterator<MapObject> i = colobj.iterator();
@@ -165,7 +167,18 @@ MapObjects colobj = tiledMap.getLayers().get("Obstructions").getObjects();
             tiledMap.getLayers().get(0).setVisible(!tiledMap.getLayers().get(0).isVisible());
         if(keycode == Input.Keys.NUM_2)
             tiledMap.getLayers().get(1).setVisible(!tiledMap.getLayers().get(1).isVisible());
-    	
+        if(keycode == Input.Keys.NUM_3) {
+        Gdx.graphics.setWindowedMode(960, 720);
+        }
+        if(keycode == Input.Keys.NUM_4) {
+            Gdx.graphics.setWindowedMode(640, 480);
+            }
+        if(keycode == Input.Keys.NUM_5) {
+        	  //DisplayMode m = new DisplayMode(32, 640, 60, 480);
+              //Gdx.graphics.setFullscreenMode(m);
+        	   Graphics.DisplayMode displayMode = Gdx.graphics.getDisplayMode();
+               Gdx.graphics.setFullscreenMode(displayMode);
+            }
         return false;
     }
 
