@@ -7,8 +7,8 @@ import com.mygdx.game.MyGdxGame;
 public class DesktopLauncher {
 	public static void main (String[] arg) {
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
-		config.width=480*3;
-		config.height=270*3;
+		config.width=480; 
+		config.height=270;
 		config.title="GDX-Mannux";
 		new LwjglApplication(new MyGdxGame(), config);
 	}

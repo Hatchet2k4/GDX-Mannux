@@ -41,6 +41,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     Texture img;
     TiledMap tiledMap;
     OrthographicCamera camera;
+    OrthographicCamera screen;
+    
     TiledMapRenderer tiledMapRenderer;
     
     Viewport view;
@@ -79,6 +81,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         float w = Gdx.graphics.getWidth();
         float h = Gdx.graphics.getHeight();
         
+        Gdx.graphics.setWindowedMode(TARGET_WIDTH*3, TARGET_HEIGHT*3);
+        
         //_spriteBatch = ResourceManager.GetSpriteBatch();
         _spriteBatch = new SpriteBatch();
  
@@ -100,6 +104,12 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         camera.setToOrtho(false,TARGET_WIDTH,TARGET_HEIGHT);
         camera.update();
         
+        screen = new OrthographicCamera();
+        //camera.setToOrtho(false,w,h);
+        screen.setToOrtho(false,TARGET_WIDTH,TARGET_HEIGHT);
+        screen.update();
+        
+
         view = new FitViewport(TARGET_WIDTH, TARGET_HEIGHT);
         
 
@@ -142,75 +152,65 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         if(Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
         	plrx+=4;        	        
         }
+        
+        if(Gdx.input.isKeyPressed(Input.Keys.UP)) {
+        	plry+=4;        	       
+        }
+        if(Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+        	plry-=4;        	        
+        }
+        
         tab.setPosition(plrx, plry);
         
         float camerax=plrx+32;
-        float cameray=plry;
+        float cameray=plry+32;
         if(camerax - (TARGET_WIDTH/2) < 0) camerax=TARGET_WIDTH/2;
         if(camerax +(TARGET_WIDTH/2) > mapWidth) camerax=mapWidth - (TARGET_WIDTH/2);
         
-        Gdx.gl.glClearColor(0, 0, 0, 1);
-        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        if(cameray - (TARGET_HEIGHT/2) < 0) cameray=TARGET_HEIGHT/2;
+        if(cameray +(TARGET_HEIGHT/2) > mapHeight) cameray=mapHeight - (TARGET_HEIGHT/2);
         
         
         
         camera.position.set(camerax, cameray, 0);
         camera.update();
+        tiledMapRenderer.setView(camera);
         
-        //_spriteBatch.begin();
-        //sp.setPosition(208*2-winx*2, 180*2-winy*2);
-        //sp.setScale(2);
-        //sp.draw(_spriteBatch);
-        //_spriteBatch.end();
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         
-        //RenderHelper.RenderAtPosition(_spriteBatch, bg, winx, winy);
-        tiledMapRenderer.setView(camera);                
+
+        
+                
         
         tiledMapRenderer.render(); //todo - proper render order of all the layers with sprites in between
-     
-        
-        
-
-        
-        //MapObjects colobj = tiledMap.getLayers().get("Obstructions").getObjects();
-        
-
-        
-        
+             
         _spriteBatch.begin();
         _spriteBatch.setProjectionMatrix(camera.combined);
 		        
+     
+        
+        tab.draw(_spriteBatch);
+        //float fh=font.getLineHeight();
+        
+        
+        _spriteBatch.end();
+
+        //last layer, everything drawn in screen target coords instead. UI elements, etc
+        _spriteBatch.begin();
+        _spriteBatch.setProjectionMatrix(screen.combined);
+        
+        
 		window.setPosition(TARGET_WIDTH-window.getWidth()+winx, TARGET_HEIGHT-window.getHeight()+winy);
         
         window.draw(_spriteBatch);
         
-        
-        tab.draw(_spriteBatch);
-        //float fh=font.getLineHeight();
         font.draw(_spriteBatch, "Screen w: "+Float.toString(w) + " h: " + Float.toString(h), 0, TARGET_HEIGHT+winy);
-        font.draw(_spriteBatch, "winx: "+Integer.toString(winx) + " winy: " + Integer.toString(winy), 0, TARGET_HEIGHT-20+winy);
+        font.draw(_spriteBatch, "Target w: "+Integer.toString(TARGET_WIDTH) + " h: " + Integer.toString(TARGET_HEIGHT), 0, TARGET_HEIGHT-20+winy);
         font.draw(_spriteBatch, "camerax: "+Float.toString(camerax) + " y: " + Float.toString(cameray), 0, TARGET_HEIGHT-40+winy);
         
-        
-        /*
-        font.draw(_spriteBatch, obj.getName(), 0, h+20);        
-        
-        Iterator<MapObject> i = colobj.iterator();
-        int y=0;
-        while(i.hasNext()) {
-        	MapProperties o = i.next().getProperties();
-        
-        	//System.out.println("value= " + i.next().toString());
-        	font.draw(_spriteBatch, o.toString()  , 0, 440-y);
-        	y+=20;
-        	
-        }
-        */
-        
         _spriteBatch.end();
-        
-        
         
         
     }
