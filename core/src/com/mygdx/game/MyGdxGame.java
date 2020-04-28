@@ -19,9 +19,11 @@ import com.badlogic.gdx.maps.MapLayers;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.MapProperties;
+
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapImageLayer;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
+import com.badlogic.gdx.maps.tiled.TmxMapLoader.Parameters;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Intersector;
@@ -31,6 +33,9 @@ import com.mygdx.game.RenderHelper;
 import com.mygdx.game.ResourceManager;
 
 
+//useful info here
+//https://www.badlogicgames.com/forum/viewtopic.php?f=11&t=10173
+//http://www.pixnbgames.com/blog/libgdx/how-to-use-libgdx-tiled-several-layers/
 
 public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     Texture img;
@@ -41,11 +46,12 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     Viewport view;
     
     SpriteBatch _spriteBatch;
-    
-    //Texture bg;       
+        
     
     Sprite sp;
     Sprite window; 
+    Sprite tab;
+    
     
     int winx;
     int winy;
@@ -56,6 +62,17 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     int sx;
     int sy;
     
+    int TARGET_WIDTH=480;
+    int TARGET_HEIGHT=270;
+    //int TARGET_WIDTH=384;
+    //int TARGET_HEIGHT=216;    
+    //int TARGET_WIDTH=320;
+    //int TARGET_HEIGHT=180;
+    
+    int mapWidth;
+    int mapHeight;
+    
+    float plrx, plry;
     
     @Override
     public void create () {
@@ -67,27 +84,40 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
  
         //sp = new Sprite(new Texture(Gdx.files.internal("badlogic.jpg")));
         window = new Sprite(new Texture(Gdx.files.internal("mapwindow.png")));
-        
+        tab = new Sprite(new Texture(Gdx.files.internal("tab.png")));
         font = new BitmapFont(); 
         
-        sx=400;
-        sy=240;
+        sx=0;
+        sy=0;
         winx=0;
         winy=0;
         
+        plrx=176;
+        plry=96;
+        
         camera = new OrthographicCamera();
         //camera.setToOrtho(false,w,h);
-        camera.setToOrtho(false,400,240);
+        camera.setToOrtho(false,TARGET_WIDTH,TARGET_HEIGHT);
         camera.update();
         
-        view = new FitViewport(400, 240, camera);
+        view = new FitViewport(TARGET_WIDTH, TARGET_HEIGHT);
+        
+
         
         tiledMap = new TmxMapLoader().load("dockingbay2.tmx");
         tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
         
-        MapLayers mapLayers = tiledMap.getLayers();
+        
+        MapProperties prop = tiledMap.getProperties();
+        
+        
+        mapWidth = prop.get("width", Integer.class) * 16;
+        mapHeight = prop.get("height", Integer.class) * 16;
+        
+        
+        //MapLayers mapLayers = tiledMap.getLayers();
 
-        obj =  (TiledMapImageLayer) mapLayers.get("BG2");
+        //obj =  (TiledMapImageLayer) mapLayers.get("BG2");
         
         //bg = ResourceManager.GetTexture("bg_docking_bay.png");
         
@@ -105,12 +135,27 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     	
         float w = Gdx.graphics.getWidth();
         float h = Gdx.graphics.getHeight();
-    	
+
+        if(Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+        	plrx-=4;        	       
+        }
+        if(Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+        	plrx+=4;        	        
+        }
+        tab.setPosition(plrx, plry);
         
+        float camerax=plrx+32;
+        float cameray=plry;
+        if(camerax - (TARGET_WIDTH/2) < 0) camerax=TARGET_WIDTH/2;
+        if(camerax +(TARGET_WIDTH/2) > mapWidth) camerax=mapWidth - (TARGET_WIDTH/2);
         
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        
+        
+        
+        camera.position.set(camerax, cameray, 0);
         camera.update();
         
         //_spriteBatch.begin();
@@ -122,22 +167,34 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         //RenderHelper.RenderAtPosition(_spriteBatch, bg, winx, winy);
         tiledMapRenderer.setView(camera);                
         
-        tiledMapRenderer.render();
+        tiledMapRenderer.render(); //todo - proper render order of all the layers with sprites in between
+     
         
         
-        //https://www.badlogicgames.com/forum/viewtopic.php?f=11&t=10173
 
         
-MapObjects colobj = tiledMap.getLayers().get("Obstructions").getObjects();
+        //MapObjects colobj = tiledMap.getLayers().get("Obstructions").getObjects();
+        
+
         
         
         _spriteBatch.begin();
-        window.setPosition(560, 420);
-        window.setScale(2);
+        _spriteBatch.setProjectionMatrix(camera.combined);
+		        
+		window.setPosition(TARGET_WIDTH-window.getWidth()+winx, TARGET_HEIGHT-window.getHeight()+winy);
+        
         window.draw(_spriteBatch);
         
-        font.draw(_spriteBatch, "w: "+Integer.toString(Gdx.graphics.getWidth()) + " h: " + Integer.toString(Gdx.graphics.getHeight()), 0, 480);
-        font.draw(_spriteBatch, obj.getName(), 0, 460);        
+        
+        tab.draw(_spriteBatch);
+        //float fh=font.getLineHeight();
+        font.draw(_spriteBatch, "Screen w: "+Float.toString(w) + " h: " + Float.toString(h), 0, TARGET_HEIGHT+winy);
+        font.draw(_spriteBatch, "winx: "+Integer.toString(winx) + " winy: " + Integer.toString(winy), 0, TARGET_HEIGHT-20+winy);
+        font.draw(_spriteBatch, "camerax: "+Float.toString(camerax) + " y: " + Float.toString(cameray), 0, TARGET_HEIGHT-40+winy);
+        
+        
+        /*
+        font.draw(_spriteBatch, obj.getName(), 0, h+20);        
         
         Iterator<MapObject> i = colobj.iterator();
         int y=0;
@@ -149,6 +206,7 @@ MapObjects colobj = tiledMap.getLayers().get("Obstructions").getObjects();
         	y+=20;
         	
         }
+        */
         
         _spriteBatch.end();
         
@@ -159,52 +217,58 @@ MapObjects colobj = tiledMap.getLayers().get("Obstructions").getObjects();
 
     @Override
     public boolean keyDown(int keycode) {
-    	
-        if(keycode == Input.Keys.LEFT) {
+    	/*
+        if(keycode == Input.Keys.LEFT & winx>0) {
+        	
             camera.translate(-16,0);
             winx -= 16;
         }
-        if(keycode == Input.Keys.RIGHT) {
+        if(keycode == Input.Keys.RIGHT & winx<mapWidth-TARGET_WIDTH) {
             camera.translate(16,0);
             winx += 16;
         }
-        if(keycode == Input.Keys.UP) {
+        if(keycode == Input.Keys.UP & winy<mapHeight-TARGET_HEIGHT) {
             camera.translate(0,16);
             winy += 16;
         }
-        if(keycode == Input.Keys.DOWN) {
+        if(keycode == Input.Keys.DOWN & winy>0) {
             camera.translate(0,-16);
             winy -= 16;
         }
+        */
         if(keycode == Input.Keys.NUM_1)
             tiledMap.getLayers().get(0).setVisible(!tiledMap.getLayers().get(0).isVisible());
         if(keycode == Input.Keys.NUM_2)
             tiledMap.getLayers().get(1).setVisible(!tiledMap.getLayers().get(1).isVisible());
         if(keycode == Input.Keys.NUM_3) {
-        Gdx.graphics.setWindowedMode(1200, 720);
+        	Gdx.graphics.setWindowedMode(TARGET_WIDTH*3, TARGET_HEIGHT*3);
         }
         if(keycode == Input.Keys.NUM_4) {
-            Gdx.graphics.setWindowedMode(800, 480);
+            Gdx.graphics.setWindowedMode(TARGET_WIDTH*2, TARGET_HEIGHT*2);
             }
         if(keycode == Input.Keys.NUM_5) {
 
         	   Graphics.DisplayMode displayMode = Gdx.graphics.getDisplayMode();
                Gdx.graphics.setFullscreenMode(displayMode);
             }
+        if(keycode == Input.Keys.NUM_6) {
+
+        	Gdx.graphics.setWindowedMode(1280, 720);
+         }
         if(keycode == Input.Keys.PLUS) {
-        	   sx+=10;
-        	   sy+=10;
-        	   //view = new FitViewport(sx, sy, camera);
-               camera.setToOrtho(false,sx,sy);
+        	   sx-=16;
+        	   sy-=9;
+  
+               camera.setToOrtho(false,TARGET_WIDTH+sx,TARGET_HEIGHT+sy);
                camera.update();
         	   
           }
         if(keycode == Input.Keys.MINUS) {
-     	   sx-=10;
-     	   sy-=10;
-     	   //view = new FitViewport(sx, sy, camera);
-            camera.setToOrtho(false,sx,sy);
-            camera.update();
+     	   sx+=16;
+     	   sy+=9;
+     	  
+           camera.setToOrtho(false,TARGET_WIDTH+sx,TARGET_HEIGHT+sy);
+           camera.update();
      	   
        }
      
