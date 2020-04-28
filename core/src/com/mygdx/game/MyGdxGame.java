@@ -25,14 +25,20 @@ import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Intersector;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 import com.mygdx.game.RenderHelper;
 import com.mygdx.game.ResourceManager;
+
+
 
 public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     Texture img;
     TiledMap tiledMap;
     OrthographicCamera camera;
     TiledMapRenderer tiledMapRenderer;
+    
+    Viewport view;
     
     SpriteBatch _spriteBatch;
     
@@ -69,6 +75,9 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         //camera.setToOrtho(false,w,h);
         camera.setToOrtho(false,320,240);
         camera.update();
+        
+        view = new FitViewport(320, 240, camera);
+        
         tiledMap = new TmxMapLoader().load("dockingbay2.tmx");
         tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
         
@@ -81,6 +90,11 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         Gdx.input.setInputProcessor(this);
     }
 
+    @Override
+    public void resize(int width, int height) {
+        view.update(width, height);
+    }
+    
     @Override
     public void render () {
     	
@@ -108,12 +122,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         
         
         //https://www.badlogicgames.com/forum/viewtopic.php?f=11&t=10173
-        
-        //Intersector ins = new Intersector();
-        
 
-        
-       // tiledMapRenderer.renderImageLayer(obj);
         
 MapObjects colobj = tiledMap.getLayers().get("Obstructions").getObjects();
         
