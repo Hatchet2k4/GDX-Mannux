@@ -53,6 +53,9 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     BitmapFont font;         
     TiledMapImageLayer obj;
     
+    int sx;
+    int sy;
+    
     
     @Override
     public void create () {
@@ -67,16 +70,17 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         
         font = new BitmapFont(); 
         
-        
+        sx=400;
+        sy=240;
         winx=0;
         winy=0;
         
         camera = new OrthographicCamera();
         //camera.setToOrtho(false,w,h);
-        camera.setToOrtho(false,320,240);
+        camera.setToOrtho(false,400,240);
         camera.update();
         
-        view = new FitViewport(320, 240, camera);
+        view = new FitViewport(400, 240, camera);
         
         tiledMap = new TmxMapLoader().load("dockingbay2.tmx");
         tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
@@ -177,17 +181,34 @@ MapObjects colobj = tiledMap.getLayers().get("Obstructions").getObjects();
         if(keycode == Input.Keys.NUM_2)
             tiledMap.getLayers().get(1).setVisible(!tiledMap.getLayers().get(1).isVisible());
         if(keycode == Input.Keys.NUM_3) {
-        Gdx.graphics.setWindowedMode(960, 720);
+        Gdx.graphics.setWindowedMode(1200, 720);
         }
         if(keycode == Input.Keys.NUM_4) {
-            Gdx.graphics.setWindowedMode(640, 480);
+            Gdx.graphics.setWindowedMode(800, 480);
             }
         if(keycode == Input.Keys.NUM_5) {
-        	  //DisplayMode m = new DisplayMode(32, 640, 60, 480);
-              //Gdx.graphics.setFullscreenMode(m);
+
         	   Graphics.DisplayMode displayMode = Gdx.graphics.getDisplayMode();
                Gdx.graphics.setFullscreenMode(displayMode);
             }
+        if(keycode == Input.Keys.PLUS) {
+        	   sx+=10;
+        	   sy+=10;
+        	   //view = new FitViewport(sx, sy, camera);
+               camera.setToOrtho(false,sx,sy);
+               camera.update();
+        	   
+          }
+        if(keycode == Input.Keys.MINUS) {
+     	   sx-=10;
+     	   sy-=10;
+     	   //view = new FitViewport(sx, sy, camera);
+            camera.setToOrtho(false,sx,sy);
+            camera.update();
+     	   
+       }
+     
+        
         return false;
     }
 
