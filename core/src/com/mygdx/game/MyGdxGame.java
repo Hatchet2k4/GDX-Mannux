@@ -8,18 +8,20 @@ import com.badlogic.gdx.Graphics;
 import com.badlogic.gdx.Graphics.DisplayMode;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapLayers;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.MapProperties;
-
+import com.badlogic.gdx.maps.objects.PolylineMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapImageLayer;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
@@ -27,6 +29,9 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader.Parameters;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Intersector;
+import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Polyline;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.mygdx.game.RenderHelper;
@@ -38,7 +43,7 @@ import com.mygdx.game.ResourceManager;
 //http://www.pixnbgames.com/blog/libgdx/how-to-use-libgdx-tiled-several-layers/
 
 public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
-    Texture img;
+    //Texture img;
     TiledMap tiledMap;
     OrthographicCamera camera;
     OrthographicCamera screen;
@@ -59,7 +64,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     int winy;
     
     BitmapFont font;         
-    TiledMapImageLayer obj;
+    //TiledMapImageLayer obj;
     
     int sx;
     int sy;
@@ -75,6 +80,9 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     int mapHeight;
     
     float plrx, plry;
+    ShapeRenderer debugRenderer;
+    
+    Polyline polyline;
     
     @Override
     public void create () {
@@ -82,6 +90,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         float h = Gdx.graphics.getHeight();
         
         Gdx.graphics.setWindowedMode(TARGET_WIDTH*3, TARGET_HEIGHT*3);
+        
+        debugRenderer = new ShapeRenderer();
         
         //_spriteBatch = ResourceManager.GetSpriteBatch();
         _spriteBatch = new SpriteBatch();
@@ -116,6 +126,26 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         
         tiledMap = new TmxMapLoader().load("dockingbay2.tmx");
         tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
+        
+        MapLayers layers = tiledMap.getLayers();     
+        Iterator<MapLayer> layersIter = layers.iterator(); 
+        
+        
+        //polyline = ((PolylineMapObject)o).getPolyline();
+        
+        while(layersIter.hasNext()) {
+            MapLayer layer = layersIter.next();
+            if(layer.getName().equals("Obstructions")) {
+                MapObjects os = layer.getObjects();
+                Iterator<MapObject> osIter = os.iterator();
+                while(osIter.hasNext()) {
+                    MapObject o = osIter.next();
+                    polyline = ((PolylineMapObject)o).getPolyline();
+                }
+            }
+        }
+        
+        
         
         
         MapProperties prop = tiledMap.getProperties();
@@ -197,7 +227,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         
         _spriteBatch.end();
 
-        //last layer, everything drawn in screen target coords instead. UI elements, etc
+        //last layer, everything here drawn in screen coords. UI elements, etc
         _spriteBatch.begin();
         _spriteBatch.setProjectionMatrix(screen.combined);
         
@@ -209,6 +239,10 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         font.draw(_spriteBatch, "Screen w: "+Float.toString(w) + " h: " + Float.toString(h), 0, TARGET_HEIGHT+winy);
         font.draw(_spriteBatch, "Target w: "+Integer.toString(TARGET_WIDTH) + " h: " + Integer.toString(TARGET_HEIGHT), 0, TARGET_HEIGHT-20+winy);
         font.draw(_spriteBatch, "camerax: "+Float.toString(camerax) + " y: " + Float.toString(cameray), 0, TARGET_HEIGHT-40+winy);
+        
+        float[] verts = polyline.getVertices();
+        
+        DrawLine(new Vector2(10, 10), new Vector2(20, 20), 3, Color.YELLOW, screen.combined);
         
         _spriteBatch.end();
         
@@ -263,19 +297,26 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
                camera.update();
         	   
           }
-        if(keycode == Input.Keys.MINUS) {
-     	   sx+=16;
-     	   sy+=9;
-     	  
-           camera.setToOrtho(false,TARGET_WIDTH+sx,TARGET_HEIGHT+sy);
-           camera.update();
-     	   
-       }
-     
-        
+         if(keycode == Input.Keys.ESCAPE) {
+        	 
+    	   dispose();
+         }
+
         return false;
     }
 
+	@Override
+	public void dispose () {
+	   
+       tiledMap.dispose();   	 
+       
+       font.dispose();
+       //_spriteBatch.dispose();
+       
+       
+  	   Gdx.app.exit(); 
+	}     
+    
     @Override
     public boolean keyUp(int keycode) {
 
@@ -312,6 +353,31 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     public boolean scrolled(int amount) {
         return false;
     }
+    
+    
+
+    public void DrawLine(Vector2 start, Vector2 end, int lineWidth, Color color, Matrix4 projectionMatrix)
+    {
+        Gdx.gl.glLineWidth(lineWidth);
+        debugRenderer.setProjectionMatrix(projectionMatrix);
+        debugRenderer.begin(ShapeRenderer.ShapeType.Line);
+        debugRenderer.setColor(color);
+        debugRenderer.line(start, end);
+        debugRenderer.end();
+        Gdx.gl.glLineWidth(1);
+    }
+
+    public void DrawLine(Vector2 start, Vector2 end, Matrix4 projectionMatrix)
+    {
+        Gdx.gl.glLineWidth(2);
+        debugRenderer.setProjectionMatrix(projectionMatrix);
+        debugRenderer.begin(ShapeRenderer.ShapeType.Line);
+        debugRenderer.setColor(Color.WHITE);
+        debugRenderer.line(start, end);
+        debugRenderer.end();
+        Gdx.gl.glLineWidth(1);
+    }
+    
 }
 
 
