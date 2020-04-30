@@ -13,9 +13,13 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Pixmap.Format;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapLayers;
@@ -64,6 +68,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     Viewport view;
 
     SpriteBatch _spriteBatch;
+    SpriteBatch batch;
 
     Sprite sp;
     Sprite window;
@@ -85,6 +90,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     // int TARGET_WIDTH=320;
     // int TARGET_HEIGHT=180;
 
+    int numobj;
+
     int mapWidth;
     int mapHeight;
 
@@ -95,6 +102,11 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
     Rectangle scissor;
     Rectangle clipBounds;
+
+
+    FrameBuffer lightBuffer;
+    TextureRegion lightBufferRegion;
+    Texture lightSprite;
 
     @Override
     public void create() {
@@ -107,6 +119,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
         // _spriteBatch = ResourceManager.GetSpriteBatch();
         _spriteBatch = new SpriteBatch();
+        batch = new SpriteBatch();
 
         music = Gdx.audio.newMusic(Gdx.files.internal("00_-_zaril_-_close_to_the_core.mp3"));
         music.setLooping(true);
@@ -115,6 +128,11 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         // sp = new Sprite(new Texture(Gdx.files.internal("badlogic.jpg")));
         window = new Sprite(new Texture(Gdx.files.internal("mapwindow.png")));
         tab = new Sprite(new Texture(Gdx.files.internal("tab.png")));
+
+
+        lightSprite = new Texture(Gdx.files.internal("light.png"));
+        
+        
         font = new BitmapFont();
 
         scissor = new Rectangle();
@@ -129,19 +147,20 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         plry = 96;
 
         camera = new OrthographicCamera();
-        // camera.setToOrtho(false,w,h);
         camera.setToOrtho(false, TARGET_WIDTH, TARGET_HEIGHT);
         camera.update();
 
         screen = new OrthographicCamera();
-        // camera.setToOrtho(false,w,h);
+
         screen.setToOrtho(false, TARGET_WIDTH, TARGET_HEIGHT);
         screen.update();
 
         view = new FitViewport(TARGET_WIDTH, TARGET_HEIGHT);
 
         tiledMap = new TmxMapLoader().load("dockingbay2.tmx");
-        tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap, _spriteBatch);
+        //tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap, _spriteBatch);
+        tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
+        tiledMapRenderer.setView(camera);
 
         MapLayers layers = tiledMap.getLayers();
         Iterator<MapLayer> layersIter = layers.iterator();
@@ -152,12 +171,19 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
             MapLayer layer = layersIter.next();
             if (layer.getName().equals("Obstructions")) {
                 MapObjects os = layer.getObjects();
+                numobj = os.getCount();
+
                 Iterator<MapObject> osIter = os.iterator();
                 while (osIter.hasNext()) {
                     MapObject o = osIter.next();
                     polyline = ((PolylineMapObject) o).getPolyline();
                 }
             }
+            if (layer.getName().equals("Walls") || layer.getName().equals("Background")) {
+             //   layer.setOpacity(0.5f);
+             //   layer.setOffsetX(50);
+            }
+
         }
 
         MapProperties prop = tiledMap.getProperties();
@@ -177,6 +203,24 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     @Override
     public void resize(int width, int height) {
         view.update(width, height);
+
+        // Fakedlight system (alpha blending)
+
+        // if lightBuffer was created before, dispose, we recreate a new one
+        if (lightBuffer!=null) lightBuffer.dispose();
+        lightBuffer = new FrameBuffer(Format.RGBA8888, TARGET_WIDTH, TARGET_HEIGHT, false);
+
+        lightBuffer.getColorBufferTexture().setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
+
+        lightBufferRegion = new TextureRegion(lightBuffer.getColorBufferTexture(),0,lightBuffer.getHeight()-TARGET_HEIGHT,TARGET_WIDTH,TARGET_HEIGHT);
+
+        lightBufferRegion.flip(false, false);
+    }
+
+    public int PowerOf2(int x) {
+        int power = 1;
+        while(power < x) { power*=2; }        
+        return power;
     }
 
     @Override
@@ -215,12 +259,13 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
         camera.position.set(camerax, cameray, 0);
         camera.update();
-        // tiledMapRenderer.setView(camera);
+        
         // tiledMapRenderer.setView(camera.combined, 64, 64, TARGET_WIDTH - 64,
         // TARGET_HEIGHT - 64);
-        tiledMapRenderer.setView(camera.combined, 64, 64, TARGET_WIDTH, TARGET_HEIGHT);
+        //tiledMapRenderer.setView(camera.combined, 64, 64, TARGET_WIDTH, TARGET_HEIGHT);
+        tiledMapRenderer.setView(camera);
 
-        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClearColor(100, 0, 0, 1);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
@@ -240,17 +285,25 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
         _spriteBatch.end();
 
+
+        
+
         // last layer, everything here drawn in target screen coords. UI elements, etc
+        
+        
+
+        RunLights();
+
+
+
+        
         _spriteBatch.begin();
         _spriteBatch.setProjectionMatrix(screen.combined);
-
         // some reason, font needs to be first..?
         font.draw(_spriteBatch, "Screen w: " + Float.toString(w) + " h: " + Float.toString(h), 0, TARGET_HEIGHT);
-        font.draw(_spriteBatch,
-                "Target w: " + Integer.toString(TARGET_WIDTH) + " h: " + Integer.toString(TARGET_HEIGHT), 0,
-                TARGET_HEIGHT - 20);
-        font.draw(_spriteBatch, "camerax: " + Float.toString(camerax) + " y: " + Float.toString(cameray), 0,
-                TARGET_HEIGHT - 40);
+        font.draw(_spriteBatch, "Target w: " + Integer.toString(TARGET_WIDTH) + " h: " + Integer.toString(TARGET_HEIGHT), 0, TARGET_HEIGHT - 20);
+        font.draw(_spriteBatch, "camerax: " + Float.toString(camerax) + " y: " + Float.toString(cameray), 0, TARGET_HEIGHT - 40);
+       // font.draw(_spriteBatch, "num obj: " + Integer.toString(numobj), 0,   TARGET_HEIGHT - 60);
 
         window.setPosition(TARGET_WIDTH - window.getWidth() + winx, TARGET_HEIGHT - window.getHeight() + winy);
 
@@ -263,6 +316,72 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
         _spriteBatch.end();
 
+    }
+
+    public void RunLights() {
+        // start rendering to the lightBuffer
+        lightBuffer.begin();
+
+        // setup the right blending
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+                        
+        // set the ambient color values, this is the "global" light of your scene
+        // imagine it being the sun.  Usually the alpha value is just 1, and you change the darkness/brightness with the Red, Green and Blue values for best effect
+
+        Gdx.gl.glClearColor(0.0f,0.0f,0.0f,1f);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+                            
+        // start rendering the lights to our spriteBatch
+        batch.begin();
+
+
+        // set the color of your light (red,green,blue,alpha values)
+        batch.setColor(0.2f, 0.2f, 0.4f, 1.2f);
+
+        // tx and ty contain the center of the light source
+        //float tx= (TARGET_WIDTH/2);
+        float ty= (TARGET_HEIGHT/2);
+        //float tx=0;
+        //float ty=TARGET_HEIGHT;
+        float tx=plrx+32;
+        //float ty=plry+32;
+
+
+
+        // tw will be the size of the light source based on the "distance"
+        // (the light image is 128x128)
+        // and 96 is the "distance"  
+        // Experiment with this value between based on your game resolution 
+        // my lights are 8 up to 128 in distance
+        
+        //float tw=(512/100f)*128;
+        float tw=1024;
+        float th=1024;
+
+        // make sure the center is still the center based on the "distance"
+        //tx-=(tw/2);
+        //ty-=(tw/2);
+
+        // and render the sprite
+        batch.draw(lightSprite, tx,ty,512,512,0,0,1024,1024,false,false);
+
+        batch.end();
+        lightBuffer.end();
+
+
+        // now we render the lightBuffer to the default "frame buffer"
+        // with the right blending !
+
+        Gdx.gl.glBlendFunc(GL20.GL_DST_COLOR, GL20.GL_ZERO);
+        batch.begin();
+        //batch.draw(lightBufferRegion, 0, 0,TARGET_WIDTH,TARGET_HEIGHT);               
+        batch.draw(lightBufferRegion, 0, 0,Gdx.graphics.getWidth(),Gdx.graphics.getHeight());               
+        batch.end();
+
+        // post light-rendering
+        // you might want to render your statusbar stuff here
+        
     }
 
     @Override
@@ -318,6 +437,9 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         music.dispose();
         tab.getTexture().dispose();
         window.getTexture().dispose();
+        lightSprite.dispose();
+        lightBuffer.dispose();
+
 
         Gdx.app.exit();
     }
