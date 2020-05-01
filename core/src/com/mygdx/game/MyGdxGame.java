@@ -1,6 +1,7 @@
 package com.mygdx.game;
 
 import java.util.Iterator;
+import java.util.List;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -38,12 +39,14 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Polyline;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.ChainShape;
 import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.mygdx.game.RenderHelper;
 import com.mygdx.game.ResourceManager;
-
+import java.util.ArrayList;
+import java.util.Arrays;
 //useful info here
 //https://www.badlogicgames.com/forum/viewtopic.php?f=11&t=10173
 //http://www.pixnbgames.com/blog/libgdx/how-to-use-libgdx-tiled-several-layers/
@@ -76,6 +79,8 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
     int winx;
     int winy;
+    
+    
 
     BitmapFont font;
     // TiledMapImageLayer obj;
@@ -108,6 +113,10 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     TextureRegion lightBufferRegion;
     Texture lightSprite;
 
+    ArrayList<ChainShape> obs;
+    
+    float[] vertices;
+    
     @Override
     public void create() {
         float w = Gdx.graphics.getWidth();
@@ -166,7 +175,11 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         Iterator<MapLayer> layersIter = layers.iterator();
 
         // polyline = ((PolylineMapObject)o).getPolyline();
-
+        //obs = new ArrayList<ChainShape>();
+        //List<Float> obslist = new ArrayList<Float>();
+        
+        //float[] v = polyline.getTransformedVertices();
+        
         while (layersIter.hasNext()) {
             MapLayer layer = layersIter.next();
             if (layer.getName().equals("Obstructions")) {
@@ -176,7 +189,13 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
                 Iterator<MapObject> osIter = os.iterator();
                 while (osIter.hasNext()) {
                     MapObject o = osIter.next();
+                    //bad, assuming polylines!
+                    
                     polyline = ((PolylineMapObject) o).getPolyline();
+                    //float[] v = polyline.getTransformedVertices();
+                    //obslist.addAll(Arrays.asList((Float[])v));
+                    
+                    
                 }
             }
             if (layer.getName().equals("Walls") || layer.getName().equals("Background")) {
@@ -283,6 +302,29 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         tab.draw(_spriteBatch);
         // float fh=font.getLineHeight();
 
+        
+/*
+        
+        float lastx=-9999f;
+        float lasty=-9999f;
+        float curx=-9999f;
+        float cury=-9999f;
+        
+        if (v.length>=4) {
+        	lastx=v[0];
+        	lasty=v[1];
+        	
+            for(int i=2; i<v.length; i+=2) {
+            	curx=v[i];
+            	cury=v[i+1];
+            	
+            	DrawLine(new Vector2(lastx, lasty), new Vector2(curx, cury), 3, Color.YELLOW, camera.combined); 	
+            	
+            	lastx=curx;
+            	lasty=cury;
+            }        	
+        }        
+  */      
         _spriteBatch.end();
 
 
@@ -292,7 +334,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         
         
 
-        RunLights();
+        //RunLights();
 
 
 
@@ -301,10 +343,14 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         _spriteBatch.setProjectionMatrix(screen.combined);
         // some reason, font needs to be first..?
         font.draw(_spriteBatch, "Screen w: " + Float.toString(w) + " h: " + Float.toString(h), 0, TARGET_HEIGHT);
-        font.draw(_spriteBatch, "Target w: " + Integer.toString(TARGET_WIDTH) + " h: " + Integer.toString(TARGET_HEIGHT), 0, TARGET_HEIGHT - 20);
-        font.draw(_spriteBatch, "camerax: " + Float.toString(camerax) + " y: " + Float.toString(cameray), 0, TARGET_HEIGHT - 40);
+        //font.draw(_spriteBatch, "Target w: " + Integer.toString(TARGET_WIDTH) + " h: " + Integer.toString(TARGET_HEIGHT), 0, TARGET_HEIGHT - 20);
+        //font.draw(_spriteBatch, "camerax: " + Float.toString(camerax) + " y: " + Float.toString(cameray), 0, TARGET_HEIGHT - 40);
        // font.draw(_spriteBatch, "num obj: " + Integer.toString(numobj), 0,   TARGET_HEIGHT - 60);
-
+        
+        
+        
+        //font.draw(_spriteBatch, "Polyline: " + Float.toString(w) + " h: " + Float.toString(h), 0, TARGET_HEIGHT);
+        
         window.setPosition(TARGET_WIDTH - window.getWidth() + winx, TARGET_HEIGHT - window.getHeight() + winy);
 
         window.draw(_spriteBatch);
@@ -314,6 +360,10 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
         // DrawLine(new Vector2(10, 10), new Vector2(20, 20), 3, Color.YELLOW,
         // screen.combined);
 
+        
+
+        
+        
         _spriteBatch.end();
 
     }
@@ -480,7 +530,36 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     public boolean scrolled(int amount) {
         return false;
     }
+/*
 
+    private void ParseObstructions(TiledMap tiledMap)
+    {
+        for(var tileset in _tiledMap.Tilesets)
+        {
+            var texture = tileset.Texture;
+            foreach (var tile in tileset.Tiles)
+            {
+                string obs = "";
+                if (tile.Properties.TryGetValue("obs",out obs) && obs == "true")
+                {
+                    var tr = tileset.GetTileRegion(tile.LocalTileIdentifier);
+                    Color[] rawData = new Color[tr.Width * tr.Height];
+                    texture.GetData<Color>(0, tr, rawData, 0,tr.Width*tr.Height);
+                    var obdata = new bool[tr.Width, tr.Height];
+                    for (var x = 0; x < tr.Width; x++)
+                    {
+                        for (var y = 0; y < tr.Height; y++)
+                        {
+                            obdata[x, y] = rawData[x + y * tr.Height].A > 0;
+                        }
+                    }
+                    _obsData.Add(tile.LocalTileIdentifier+1, obdata);
+                }
+            }
+        }
+    }    
+    */
+    
     public void DrawLine(Vector2 start, Vector2 end, int lineWidth, Color color, Matrix4 projectionMatrix) {
         Gdx.gl.glLineWidth(lineWidth);
         debugRenderer.setProjectionMatrix(projectionMatrix);
