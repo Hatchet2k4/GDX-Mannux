@@ -31,6 +31,7 @@ import com.badlogic.gdx.maps.objects.PolylineMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapImageLayer;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
+import com.badlogic.gdx.maps.tiled.TiledMapTileSet;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader.Parameters;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
@@ -80,7 +81,9 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     int winx;
     int winy;
     
-    
+    static final double DT = 1/60.0;
+    static final int MAX_UPDATES_PER_FRAME = 3; //for preventing spiral of death
+    private long currentTimeMillis;
 
     BitmapFont font;
     // TiledMapImageLayer obj;
@@ -166,7 +169,7 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
 
         view = new FitViewport(TARGET_WIDTH, TARGET_HEIGHT);
 
-        tiledMap = new TmxMapLoader().load("dockingbay2.tmx");
+        tiledMap = new TmxMapLoader().load("dockingbay2a.tmx");
         //tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap, _spriteBatch);
         tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
         tiledMapRenderer.setView(camera);
@@ -530,36 +533,61 @@ public class MyGdxGame extends ApplicationAdapter implements InputProcessor {
     public boolean scrolled(int amount) {
         return false;
     }
-/*
 
+/*
     private void ParseObstructions(TiledMap tiledMap)
     {
-        for(var tileset in _tiledMap.Tilesets)
+        for(TiledMapTileSet tileset : tiledMap.getTileSets())
         {
-            var texture = tileset.Texture;
-            foreach (var tile in tileset.Tiles)
-            {
-                string obs = "";
-                if (tile.Properties.TryGetValue("obs",out obs) && obs == "true")
+            if (tileset.getName() == "Obstructions") {
+                Texture texture = tileset.get
+                foreach (var tile in tileset.Tiles)
                 {
-                    var tr = tileset.GetTileRegion(tile.LocalTileIdentifier);
-                    Color[] rawData = new Color[tr.Width * tr.Height];
-                    texture.GetData<Color>(0, tr, rawData, 0,tr.Width*tr.Height);
-                    var obdata = new bool[tr.Width, tr.Height];
-                    for (var x = 0; x < tr.Width; x++)
+                    string obs = "";
+                    if (tile.Properties.TryGetValue("obs",out obs) && obs == "true")
                     {
-                        for (var y = 0; y < tr.Height; y++)
+                        var tr = tileset.GetTileRegion(tile.LocalTileIdentifier);
+                        Color[] rawData = new Color[tr.Width * tr.Height];
+                        texture.GetData<Color>(0, tr, rawData, 0,tr.Width*tr.Height);
+                        var obdata = new bool[tr.Width, tr.Height];
+                        for (var x = 0; x < tr.Width; x++)
                         {
-                            obdata[x, y] = rawData[x + y * tr.Height].A > 0;
+                            for (var y = 0; y < tr.Height; y++)
+                            {
+                                obdata[x, y] = rawData[x + y * tr.Height].A > 0;
+                            }
                         }
+                       // _obsData.Add(tile.LocalTileIdentifier+1, obdata);
                     }
-                    _obsData.Add(tile.LocalTileIdentifier+1, obdata);
                 }
             }
         }
     }    
+*/
+
+
+    /*
+    public bool GetPixelObs(float x, float y)
+    {
+        var tx = (int) Math.Floor(x / TILE_SIZE);
+        var ty = (int) Math.Floor(y / TILE_SIZE);
+        if (tx >= 0 && tx < _tiledMap.Width && ty >= 0 && ty < _tiledMap.Height)
+        {
+            var tile = _obs[tx, ty];
+            if (_obsData.ContainsKey(tile))
+            {
+                int px = (int)x - (tx * (int)TILE_SIZE);
+                int py = (int)y - (ty * (int)TILE_SIZE);
+                return _obsData[tile][px, py];
+            }
+            else
+            {
+                return false;
+            }
+        }
+        return true;
+    }
     */
-    
     public void DrawLine(Vector2 start, Vector2 end, int lineWidth, Color color, Matrix4 projectionMatrix) {
         Gdx.gl.glLineWidth(lineWidth);
         debugRenderer.setProjectionMatrix(projectionMatrix);
